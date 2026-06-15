@@ -1,0 +1,11 @@
+services:
+  law:
+    build: .
+    container_name: law-app
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

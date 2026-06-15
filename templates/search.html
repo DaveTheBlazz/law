@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <span class="icon">🔍</span>
+        <h2>جستجو در نظریات حقوقی</h2>
+    </div>
+
+    <div class="tabs" id="searchTabs">
+        <button class="tab active" onclick="switchTab('keyword')">🔤 جستجوی کلمه‌ای</button>
+        {% if ai_available %}
+        <button class="tab" onclick="switchTab('semantic')">🧠 جستجوی هوشمند</button>
+        {% endif %}
+    </div>
+
+    <!-- KEYWORD SEARCH -->
+    <div class="tab-content active" id="tab-keyword">
+        <div class="search-bar">
+            <input type="text" id="keywordInput" placeholder="کلمه یا عبارت مورد نظر را وارد کنید..."
+                   value="{{ request.query_params.get('q', '') }}"
+                   onkeydown="if(event.key==='Enter') doKeywordSearch()">
+            <select id="keywordColumns">
+                <option value="estelam,nezariye" selected>سوال و نظریه</option>
+                <option value="estelam">فقط سوال</option>
+                <option value="nezariye">فقط نظریه</option>
+            </select>
+            <select id="keywordLimit">
+                <option value="25">۲۵ نتیجه</option>
+                <option value="50" selected>۵۰ نتیجه</option>
+                <option value="100">۱۰۰ نتیجه</option>
+                <option value="500">۵۰۰ نتیجه</option>
+            </select>
+            <button class="btn btn-primary" onclick="doKeywordSearch()">🔍 جستجو</button>
+        </div>
+        <div style="margin-top: 0.75rem; text-align: center;">
+            <button class="btn btn-outline btn-sm" onclick="doShowAll()">📋 نمایش همه نظریات</button>
+        </div>
+    </div>
+
+    <!-- SEMANTIC SEARCH -->
+    {% if ai_available %}
+    <div class="tab-content" id="tab-semantic">
+        <div class="alert alert-info" style="margin-bottom:1rem;">
+            💡 جستجوی هوشمند با استفاده از AI، ابتدا نظریات مشابه را پیدا می‌کند سپس هوش مصنوعی مرتبط‌ترین‌ها را انتخاب می‌کند.
+        </div>
+        <div class="search-bar">
+            <input type="text" id="semanticInput" placeholder="سوال یا موضوع خود را به زبان ساده بنویسید..."
+                   onkeydown="if(event.key==='Enter') doSemanticSearch()">
+            <select id="semanticLimit">
+                <option value="10">۱۰ نتیجه</option>
+                <option value="20" selected>۲۰ نتیجه</option>
+                <option value="50">۵۰ نتیجه</option>
+            </select>
+            <button class="btn btn-accent" onclick="doSemanticSearch()">🧠 جستجوی معنایی</button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- RESULTS -->
+<div id="resultsContainer"></div>
+<div id="paginationContainer" class="pagination"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const PAGE_SIZE = 25;
+let currentResults = [];
+let currentPage = 1;
+let currentTab = 'keyword';
+const queryParam = new URLSearchParams(window.location.search).get('q') || '';
+
+if (queryParam) {
+    document.getElementById('keywordInput').value = queryParam;
+    setTimeout(() => doKeywordSearch(), 300);
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+}
+
+async function doKeywordSearch() {
+    const q = document.getElementById('keywordInput').value.trim();
+    if (!q) return;
+    const columns = document.getElementById('keywordColumns').value;
+    const limit = document.getElementById('keywordLimit').value;
+    currentTab = 'keyword';
+
+    showLoading();
+    try {
+        const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}&columns=${columns}&limit=${limit}`);
+        const data = await resp.json();
+        currentResults = data.results || [];
+        currentPage = 1;
+        renderResults(currentResults, 'keyword');
+    } catch (e) {
+        showEmpty('خطا در ارتباط با سرور');
+    }
+}
+
+async function doSemanticSearch() {
+    const q = document.getElementById('semanticInput').value.trim();
+    if (!q) return;
+    const topK = document.getElementById('semanticLimit').value;
+    currentTab = 'semantic';
+
+    showLoading();
+    try {
+        const resp = await fetch('/api/semantic-search', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: q, top_k: parseInt(topK)})
+        });
+        const data = await resp.json();
+        if (data.error) {
+            showEmpty(data.error);
+            return;
+        }
+        currentResults = data.results || [];
+        currentPage = 1;
+        renderResults(currentResults, 'semantic');
+    } catch (e) {
+        showEmpty('خطا در ارتباط با سرور');
+    }
+}
+
+async function doShowAll() {
+    currentTab = 'keyword';
+    showLoading();
+    try {
+        const resp = await fetch('/api/all-opinions');
+        const data = await resp.json();
+        currentResults = data.results || [];
+        currentPage = 1;
+        renderResults(currentResults, 'keyword');
+    } catch (e) {
+        showEmpty('خطا در ارتباط با سرور');
+    }
+}
+
+function showLoading() {
+    document.getElementById('resultsContainer').innerHTML = `
+        <div class="loading"><div class="spinner"></div>در حال جستجو...</div>`;
+    document.getElementById('paginationContainer').innerHTML = '';
+}
+
+function showEmpty(msg = 'نتیجه‌ای یافت نشد') {
+    document.getElementById('resultsContainer').innerHTML = `
+        <div class="empty-state"><div class="icon">🔍</div><p>${msg}</p></div>`;
+    document.getElementById('paginationContainer').innerHTML = '';
+}
+
+function highlightText(text, query) {
+    if (!query) return escapeHtml(text);
+    const escaped = escapeHtml(text || '');
+    const terms = query.split(/\s+/);
+    let result = escaped;
+    for (const term of terms) {
+        const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        result = result.replace(re, '<mark>$1</mark>');
+    }
+    return result;
+}
+
+function escapeHtml(t) {
+    if (!t) return '';
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderResults(results, type) {
+    if (!results.length) { showEmpty(); return; }
+
+    const totalPages = Math.ceil(results.length / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageResults = results.slice(start, start + PAGE_SIZE);
+    const query = type === 'keyword'
+        ? document.getElementById('keywordInput').value
+        : document.getElementById('semanticInput').value;
+
+    let html = `<div class="result-list">`;
+    pageResults.forEach((r, i) => {
+        const idx = start + i + 1;
+        html += `
+        <div class="result-item">
+            <div class="result-header" onclick="toggleResult(${idx})">
+                <div class="result-num">${idx}</div>
+                <div class="result-meta">
+                    <div class="result-id">
+                        نظریه #${escapeHtml(r.nezariye_number)}
+                        <small>پرونده: ${escapeHtml(r.parvandeh_number)}</small>
+                        ${type === 'semantic' && r.similarity != null ? `<span class="similarity-badge">شباهت: ${(r.similarity * 100).toFixed(1)}%</span>` : ''}
+                    </div>
+                    <div class="result-date">📅 ${escapeHtml(r.date)}</div>
+                </div>
+                <a href="${escapeHtml(r.url)}" target="_blank" class="result-link" onclick="event.stopPropagation()">مشاهده ↗</a>
+                <div class="result-toggle" id="toggle-${idx}">▶</div>
+            </div>
+            <div class="result-body" id="body-${idx}">
+                <div class="result-section">
+                    <div class="result-section-label">سوال (استعلام)</div>
+                    <div class="result-section-text">${highlightText(r.estelam, query)}</div>
+                </div>
+                <div class="result-section">
+                    <div class="result-section-label">نظر (نظریه)</div>
+                    <div class="result-section-text">${highlightText(r.nezariye, query)}</div>
+                </div>
+            </div>
+        </div>`;
+    });
+    html += `</div>`;
+    document.getElementById('resultsContainer').innerHTML = html;
+
+    // Pagination
+    if (totalPages > 1) {
+        let pagHtml = `<button onclick="goPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>◀ قبلی</button>`;
+        for (let p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && p > 3 && p < totalPages - 2 && Math.abs(p - currentPage) > 1) {
+                if (p === 4 || p === totalPages - 3) pagHtml += `<button disabled>…</button>`;
+                continue;
+            }
+            pagHtml += `<button onclick="goPage(${p})" class="${p === currentPage ? 'active' : ''}">${p}</button>`;
+        }
+        pagHtml += `<button onclick="goPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>بعدی ▶</button>`;
+        document.getElementById('paginationContainer').innerHTML = pagHtml;
+    } else {
+        document.getElementById('paginationContainer').innerHTML = '';
+    }
+}
+
+function goPage(p) {
+    const totalPages = Math.ceil(currentResults.length / PAGE_SIZE);
+    if (p < 1 || p > totalPages) return;
+    currentPage = p;
+    renderResults(currentResults, currentTab);
+    window.scrollTo({top: 300, behavior: 'smooth'});
+}
+
+function toggleResult(idx) {
+    const body = document.getElementById('body-' + idx);
+    const toggle = document.getElementById('toggle-' + idx);
+    if (body.classList.contains('open')) {
+        body.classList.remove('open');
+        toggle.classList.remove('open');
+    } else {
+        body.classList.add('open');
+        toggle.classList.add('open');
+    }
+}
+</script>
+{% endblock %}

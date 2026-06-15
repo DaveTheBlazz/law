@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align:center; padding: 3rem 1rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">⚖️</div>
+    <h1 style="font-size: 1.8rem; color: var(--primary); margin-bottom: 0.5rem;">
+        پایگاه نظریات مشورتی اداره حقوقی
+    </h1>
+    <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem; font-size: 0.95rem;">
+        جستجو در نظریات حقوقی قوه قضاییه با قابلیت جستجوی کلمه‌ای و جستجوی معنایی (Semantic) و گفتگوی هوشمند با چت‌بات
+    </p>
+
+    <div class="stats-bar" style="justify-content: center; margin-bottom: 2rem;">
+        <div class="stat-chip">📋 مجموع نظریات: <strong>{{ total }}</strong></div>
+    </div>
+
+    <div class="search-bar" style="max-width: 600px; margin: 0 auto 2rem;">
+        <input type="text" id="heroSearch" placeholder="جستجو در نظریات... مثلاً: مهریه، طلاق، اعسار"
+               onkeydown="if(event.key==='Enter') doHeroSearch()">
+        <button class="btn btn-primary" onclick="doHeroSearch()">🔍 جستجو</button>
+    </div>
+
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/search" class="btn btn-primary" style="text-decoration:none;">📝 جستجوی پیشرفته</a>
+        <a href="/chat" class="btn btn-accent" style="text-decoration:none;">💬 گفتگو با چت‌بات</a>
+    </div>
+
+    {% if not ai_available %}
+    <div class="alert alert-warning" style="max-width: 600px; margin: 2rem auto 0;">
+        ⚠️ برای فعال‌سازی جستجوی معنایی و چت‌بات، فایل <code>.env</code> را تنظیم کنید و API Key را وارد نمایید.
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 3rem; text-align: right; max-width: 800px; margin-left: auto; margin-right: auto;">
+        <h3 style="color: var(--primary); margin-bottom: 1rem;">🔥 موضوعات پرکاربرد</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            {% for topic in ['مهریه', 'طلاق', 'اعسار', 'ارث', 'اجاره', 'ضمان', 'قرارداد', 'تأمین اجتماعی', 'چک', 'الزام به ثبت سند'] %}
+            <button class="btn btn-outline btn-sm" onclick="searchTopic('{{ topic }}')" style="text-decoration:none;">
+                {{ topic }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doHeroSearch() {
+    const q = document.getElementById('heroSearch').value.trim();
+    if (q) window.location.href = '/search?q=' + encodeURIComponent(q);
+}
+function searchTopic(topic) {
+    window.location.href = '/search?q=' + encodeURIComponent(topic);
+}
+</script>
+{% endblock %}
