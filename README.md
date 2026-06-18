@@ -21,7 +21,7 @@ A web application for searching and exploring the Iranian Judiciary's legal opin
 copy .env.example .env
 
 # 3. Run
-python run.py
+python main.py
 ```
 
 Then open **http://localhost:8000** in your browser.
@@ -57,7 +57,7 @@ law/
 ├── app.py              # FastAPI application (routes + API)
 ├── config.py           # Environment config loader
 ├── database.py         # SQLite DB layer (CSV import, search, embeddings)
-├── run.py              # Convenience startup script
+├── main.py             # Entry point / startup script
 ├── requirements.txt    # Python dependencies
 ├── .env.example        # Configuration template
 ├── templates/          # Jinja2 HTML templates

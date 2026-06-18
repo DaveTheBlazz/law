@@ -13,12 +13,17 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY app.py config.py database.py run.py ./
+COPY app.py config.py database.py main.py ./
 COPY templates/ templates/
-COPY static/ static/
-COPY opinions.csv ./
+
+# Create data directory for law.db (mounted from host /data/law/)
+RUN mkdir -p /data/law
+VOLUME ["/data/law"]
 
 # Expose port
 EXPOSE 8080
 
-CMD ["python", "run.py"]
+# Default DB path can be overridden via docker-compose env
+ENV DB_PATH=/data/law/law.db
+
+CMD ["python", "main.py"]

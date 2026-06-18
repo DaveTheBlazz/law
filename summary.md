@@ -24,7 +24,7 @@ FastAPI web app for searching 12,239 Persian legal opinions (`opinions.csv` from
 | `app.py` | FastAPI app — all routes + API, uses `openai` library |
 | `config.py` | `.env` loader, system prompt |
 | `database.py` | SQLite — CSV import, keyword search (SQL LIKE), embedding storage (unused) |
-| `run.py` | Startup: `python run.py` |
+| `main.py` | Entry point: `python main.py` |
 | `.env` | Config (port 8080, AI credentials) |
 | `.env.example` | Template |
 | `requirements.txt` | `fastapi uvicorn jinja2 python-dotenv aiohttp numpy openai` |
