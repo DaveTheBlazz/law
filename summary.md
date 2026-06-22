@@ -1,3 +1,7 @@
+> ⚠️ **Do not put real credentials in this file.** Use `.env` only.
+>
+> This key was committed on 2026-06-22 and must be rotated on `telsaco.ir`.
+
 # Law Opinions App — Summary
 
 ## Overview
@@ -11,7 +15,7 @@ FastAPI web app for searching 12,239 Persian legal opinions (`opinions.csv` from
 | Setting | Value |
 |---|---|
 | URL | `https://chat.telsaco.ir/v1` |
-| Key | `aplserghsoleirhg35366` |
+| Key | REDACTED — rotate this key on the provider side |
 | Model | `Qwen3.6-27B-Q4_K_M.gguf` |
 | Thinking | Disabled: `extra_body={"chat_template_kwargs": {"enable_thinking": False}}` |
 | Embeddings | **Not supported** by server |
