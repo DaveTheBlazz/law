@@ -9,8 +9,8 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN pip install --no-cache-dir .
 
 # Copy application code
 COPY app.py config.py database.py main.py ./
