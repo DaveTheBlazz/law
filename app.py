@@ -30,6 +30,11 @@ app = FastAPI(title=config.APP_TITLE, lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/favicon.ico")
+async def favicon():
+    from fastapi.responses import FileResponse
+    return FileResponse("static/favicon.svg", media_type="image/svg+xml")
+
 # OpenAI client (lazy init — avoids crash at import time when key is missing)
 _ai_client = None
 
