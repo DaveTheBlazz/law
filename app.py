@@ -13,6 +13,7 @@ from database import (
 )
 from fastapi import FastAPI, Request, Query, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI
 
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=config.APP_TITLE, lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # OpenAI client (lazy init — avoids crash at import time when key is missing)
 _ai_client = None
