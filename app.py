@@ -8,7 +8,6 @@ from database import (
     initialize_db,
     keyword_search,
     get_total_count,
-    get_embedding_count,
     _get_conn,
 )
 from fastapi import FastAPI, Request, Query, HTTPException
@@ -29,11 +28,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=config.APP_TITLE, lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-@app.get("/favicon.ico")
-async def favicon():
-    from fastapi.responses import FileResponse
-    return FileResponse("static/favicon.svg", media_type="image/svg+xml")
 
 # OpenAI client (lazy init — avoids crash at import time when key is missing)
 _ai_client = None
@@ -59,37 +53,34 @@ def call_llm(messages, max_tokens=2048):
         extra_body={"chat_template_kwargs": {"enable_thinking": False}},
     )
     msg = r.choices[0].message
-    return msg.content or "", r.usage
+    return msg.content or ""
 
 
 # ---------------------------------------------------------------------------
 # Page routes
 # ---------------------------------------------------------------------------
 
+_page_ctx = {
+    "app_title": config.APP_TITLE,
+    "ai_available": config.ai_available,
+}
+
 @app.get("/")
 async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {
-        "app_title": config.APP_TITLE,
-        "total": get_total_count(),
-        "embedded": get_embedding_count(),
-        "ai_available": config.ai_available(),
-    })
+    ctx = {**_page_ctx, "total": get_total_count()}
+    return templates.TemplateResponse(request, "index.html", ctx)
 
 @app.get("/search")
 async def search_page(request: Request):
-    return templates.TemplateResponse(request, "search.html", {
-        "app_title": config.APP_TITLE,
-        "total": get_total_count(),
-        "embedded": get_embedding_count(),
-        "ai_available": config.ai_available(),
-    })
+    ctx = {**_page_ctx, "total": get_total_count()}
+    return templates.TemplateResponse(request, "search.html", ctx)
 
 @app.get("/chat")
 async def chat_page(request: Request):
     if not config.ai_available():
         raise HTTPException(400, "AI not configured. Set AI_API_KEY and AI_BASE_URL in .env")
     return templates.TemplateResponse(request, "chat.html", {
-        "app_title": config.APP_TITLE,
+        **_page_ctx,
         "ai_available": True,
     })
 
@@ -100,21 +91,19 @@ async def chat_page(request: Request):
 @app.get("/api/all-opinions")
 async def api_all_opinions(
     offset: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
 ):
     conn = _get_conn()
     try:
         total = conn.execute("SELECT COUNT(*) FROM opinions").fetchone()[0]
         rows = conn.execute(
             "SELECT id, url, nezariye_number, parvandeh_number, date, estelam, nezariye "
-            "FROM opinions LIMIT ? OFFSET ?",
-            (limit, offset),
+            "FROM opinions LIMIT -1 OFFSET ?",
+            (offset,),
         ).fetchall()
         return {
             "total": total,
             "count": len(rows),
             "offset": offset,
-            "limit": limit,
             "results": [dict(r) for r in rows],
         }
     finally:
@@ -128,10 +117,8 @@ async def api_all_opinions(
 @app.get("/api/search")
 async def api_keyword_search(
     q: str = Query(..., min_length=1),
-    columns: str = Query("estelam,nezariye"),
-    limit: int = Query(50, ge=1, le=500),
 ):
-    results = keyword_search(q, columns=columns.split(","), limit=limit)
+    results = keyword_search(q)
     return {"query": q, "count": len(results), "results": results}
 
 
@@ -151,7 +138,7 @@ async def api_semantic_search(request: Request):
         return JSONResponse(status_code=400, content={"error": "query required"})
 
     # 1. Keyword search for candidates
-    candidates = keyword_search(q, limit=50)
+    candidates = keyword_search(q)[:50]
     if not candidates:
         return {"query": q, "count": 0, "results": []}
 
@@ -166,7 +153,7 @@ async def api_semantic_search(request: Request):
         + "\n".join(compact)
     )
 
-    content, _ = call_llm([
+    content = call_llm([
         {"role": "system", "content": "فقط شماره نظریه‌های مرتبط را بنویس."},
         {"role": "user", "content": prompt},
     ])
@@ -197,11 +184,11 @@ async def api_chat(request: Request):
     body = await request.json()
     messages = body.get("messages", [])
 
-    content, usage = call_llm(messages)
+    content = call_llm(messages)
     if content is None:
         return JSONResponse(status_code=500, content={"error": "LLM error"})
 
-    return {"content": content, "usage": usage}
+    return {"content": content}
 
 
 # ---------------------------------------------------------------------------
@@ -219,11 +206,11 @@ async def api_chat_with_search(request: Request):
     top_k = min(body.get("top_k", 5), 8)
 
     # 1. Keyword search
-    opinions = keyword_search(user_query, limit=20)
+    opinions = keyword_search(user_query)
     if not opinions:
         search_terms = user_query.split()
         for term in search_terms:
-            opinions = keyword_search(term, limit=20)
+            opinions = keyword_search(term)
             if opinions:
                 break
 
@@ -240,7 +227,7 @@ async def api_chat_with_search(request: Request):
     messages.append({"role": "user", "content": f"نظریات:\n{context}\n\nسوال: {user_query}"})
 
     # 4. Call LLM
-    content, usage = call_llm(messages)
+    content = call_llm(messages)
     if content is None:
         return JSONResponse(status_code=500, content={"error": "LLM error"})
 
@@ -258,7 +245,6 @@ async def api_chat_with_search(request: Request):
         "content": content,
         "sources": sources,
         "opinions_count": len(opinions),
-        "usage": usage,
     }
 
 
@@ -270,6 +256,5 @@ async def api_chat_with_search(request: Request):
 async def api_stats():
     return {
         "total_opinions": get_total_count(),
-        "embedded": get_embedding_count(),
         "ai_available": config.ai_available(),
     }

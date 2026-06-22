@@ -20,17 +20,6 @@
             <input type="text" id="keywordInput" placeholder="کلمه یا عبارت مورد نظر را وارد کنید..."
                    value="{{ request.query_params.get('q', '') }}"
                    onkeydown="if(event.key==='Enter') doKeywordSearch()">
-            <select id="keywordColumns">
-                <option value="estelam,nezariye" selected>سوال و نظریه</option>
-                <option value="estelam">فقط سوال</option>
-                <option value="nezariye">فقط نظریه</option>
-            </select>
-            <select id="keywordLimit">
-                <option value="25">۲۵ نتیجه</option>
-                <option value="50" selected>۵۰ نتیجه</option>
-                <option value="100">۱۰۰ نتیجه</option>
-                <option value="500">۵۰۰ نتیجه</option>
-            </select>
             <button class="btn btn-primary" onclick="doKeywordSearch()">🔍 جستجو</button>
         </div>
         <div style="margin-top: 0.75rem; text-align: center;">
@@ -88,13 +77,11 @@ function switchTab(tab) {
 async function doKeywordSearch() {
     const q = document.getElementById('keywordInput').value.trim();
     if (!q) return;
-    const columns = document.getElementById('keywordColumns').value;
-    const limit = document.getElementById('keywordLimit').value;
     currentTab = 'keyword';
 
     showLoading();
     try {
-        const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}&columns=${columns}&limit=${limit}`);
+        const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
         const data = await resp.json();
         currentResults = data.results || [];
         currentPage = 1;
@@ -134,7 +121,7 @@ async function doShowAll() {
     currentTab = 'keyword';
     showLoading();
     try {
-        const resp = await fetch('/api/all-opinions?limit=500&offset=0');
+        const resp = await fetch('/api/all-opinions' + (location.search ? '&' : '?') + '_=' + Date.now());
         const data = await resp.json();
         currentResults = data.results || [];
         currentPage = 1;

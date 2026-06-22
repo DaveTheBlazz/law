@@ -14,6 +14,14 @@ def test_initialize_db_creates_table(db_config):
     initialize_db()  # with no CSV, creates empty table
     assert get_total_count() == 0
 
+    # Verify embeddings table does not exist
+    from database import _get_conn
+    conn = _get_conn()
+    tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    table_names = [t[0] for t in tables]
+    assert "embeddings" not in table_names
+    conn.close()
+
 
 def test_keyword_search_empty(db_config):
     initialize_db()
