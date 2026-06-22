@@ -87,9 +87,11 @@ async def chat_page(request: Request):
 @app.get("/api/all-opinions")
 async def api_all_opinions():
     conn = _get_conn()
-    rows = conn.execute("SELECT id, url, nezariye_number, parvandeh_number, date, estelam, nezariye FROM opinions").fetchall()
-    conn.close()
-    return {"count": len(rows), "results": [dict(r) for r in rows]}
+    try:
+        rows = conn.execute("SELECT id, url, nezariye_number, parvandeh_number, date, estelam, nezariye FROM opinions").fetchall()
+        return {"count": len(rows), "results": [dict(r) for r in rows]}
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
