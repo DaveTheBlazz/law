@@ -28,18 +28,24 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=config.APP_TITLE, lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 
-# OpenAI client
-ai_client = OpenAI(
-    base_url=config.AI_BASE_URL,
-    api_key=config.AI_API_KEY,
-)
+# OpenAI client (lazy init — avoids crash at import time when key is missing)
+_ai_client = None
+
+def get_ai_client():
+    global _ai_client
+    if _ai_client is None:
+        _ai_client = OpenAI(
+            base_url=config.AI_BASE_URL,
+            api_key=config.AI_API_KEY,
+        )
+    return _ai_client
 
 
 def call_llm(messages, max_tokens=2048):
     """Call the LLM and return content string."""
     if not config.ai_available():
         return None
-    r = ai_client.chat.completions.create(
+    r = get_ai_client().chat.completions.create(
         model=config.AI_MODEL,
         messages=messages,
         max_tokens=max_tokens,
