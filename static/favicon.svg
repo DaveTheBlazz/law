@@ -1,1 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" id="mdi-scale" viewBox="0 0 24 24"><path d="M8.46,15.06L7.05,16.47L5.68,15.1C4.82,16.21 4.24,17.54 4.06,19H6V21H2V20C2,15.16 5.44,11.13 10,10.2V8.2L2,5V3H22V5L14,8.2V10.2C18.56,11.13 22,15.16 22,20V21H18V19H19.94C19.76,17.54 19.18,16.21 18.32,15.1L16.95,16.47L15.54,15.06L16.91,13.68C15.8,12.82 14.46,12.24 13,12.06V14H11V12.06C9.54,12.24 8.2,12.82 7.09,13.68L8.46,15.06M12,18A2,2 0 0,1 14,20A2,2 0 0,1 12,22C11.68,22 11.38,21.93 11.12,21.79L7.27,20L11.12,18.21C11.38,18.07 11.68,18 12,18Z" /></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="white">
+  <g>
+    <!-- Top cap -->
+    <rect x="31" y="2" width="2" height="6" rx="1"/>
+    <!-- Vertical pole -->
+    <rect x="31" y="6" width="2" height="44" rx="1"/>
+    <!-- Horizontal bar -->
+    <rect x="6" y="8" width="52" height="3" rx="1"/>
+    <!-- Left chain -->
+    <rect x="8" y="11" width="1" height="18"/>
+    <rect x="11" y="11" width="1" height="18"/>
+    <!-- Right chain -->
+    <rect x="51" y="11" width="1" height="18"/>
+    <rect x="54" y="11" width="1" height="18"/>
+    <!-- Left pan -->
+    <path d="M4 30 Q10 38 16 30" fill="none" stroke="white" stroke-width="2"/>
+    <!-- Right pan -->
+    <path d="M48 30 Q54 38 60 30" fill="none" stroke="white" stroke-width="2"/>
+    <!-- Base -->
+    <path d="M20 50 L44 50 L44 52 L20 52 Z" rx="2"/>
+    <rect x="31" y="42" width="2" height="8"/>
+  </g>
+</svg>
