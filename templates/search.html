@@ -134,7 +134,7 @@ async function doShowAll() {
     currentTab = 'keyword';
     showLoading();
     try {
-        const resp = await fetch('/api/all-opinions');
+        const resp = await fetch('/api/all-opinions?limit=500&offset=0');
         const data = await resp.json();
         currentResults = data.results || [];
         currentPage = 1;

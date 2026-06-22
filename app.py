@@ -85,11 +85,25 @@ async def chat_page(request: Request):
 # ---------------------------------------------------------------------------
 
 @app.get("/api/all-opinions")
-async def api_all_opinions():
+async def api_all_opinions(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+):
     conn = _get_conn()
     try:
-        rows = conn.execute("SELECT id, url, nezariye_number, parvandeh_number, date, estelam, nezariye FROM opinions").fetchall()
-        return {"count": len(rows), "results": [dict(r) for r in rows]}
+        total = conn.execute("SELECT COUNT(*) FROM opinions").fetchone()[0]
+        rows = conn.execute(
+            "SELECT id, url, nezariye_number, parvandeh_number, date, estelam, nezariye "
+            "FROM opinions LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+        return {
+            "total": total,
+            "count": len(rows),
+            "offset": offset,
+            "limit": limit,
+            "results": [dict(r) for r in rows],
+        }
     finally:
         conn.close()
 
