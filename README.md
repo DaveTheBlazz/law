@@ -14,13 +14,16 @@ A web application for searching and exploring the Iranian Judiciary's legal opin
 ## Quick Start
 
 ```bash
-# 1. Activate virtual environment
+# 1. Place opinions.csv in the project root
+# (Exported from edarehoququqy.eadl.ir or provided as a data file)
+
+# 2. Activate virtual environment
 .venv\Scripts\activate
 
-# 2. (Optional) Configure AI — copy and edit
+# 3. (Optional) Configure AI — copy and edit
 copy .env.example .env
 
-# 3. Run
+# 4. Run (auto-imports CSV into law.db on first run)
 python main.py
 ```
 
