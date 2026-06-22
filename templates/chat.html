@@ -197,6 +197,27 @@
 let isStreaming = false;
 const conversation = [];
 
+// Load saved conversation from localStorage
+try {
+    const saved = localStorage.getItem('law_chat_history');
+    if (saved) {
+        conversation.push(...JSON.parse(saved));
+    }
+} catch (e) {
+    localStorage.removeItem('law_chat_history');
+}
+
+// Re-render saved messages
+if (conversation.length > 0) {
+    document.getElementById('chatMessages').innerHTML = '';
+    for (const msg of conversation) {
+        const content = msg.role === 'user'
+            ? escapeHtml(msg.content)
+            : renderMarkdown(msg.content);
+        addMessage(msg.role, content);
+    }
+}
+
 function addMessage(role, content) {
     const container = document.getElementById('chatMessages');
     const avatar = role === 'user' ? '👤' : '🤖';
@@ -274,6 +295,14 @@ async function sendChat() {
 
         // Save to conversation
         conversation.push({role: 'assistant', content: data.content});
+        // Persist to localStorage
+        try {
+            localStorage.setItem('law_chat_history', JSON.stringify(conversation));
+        } catch (e) {
+            // Quota exceeded — keep last 6 messages
+            conversation.splice(0, conversation.length - 6);
+            localStorage.setItem('law_chat_history', JSON.stringify(conversation));
+        }
 
         // Build response with source cards
         let responseHtml = renderMarkdown(data.content || 'پاسخی دریافت نشد.');
@@ -353,6 +382,7 @@ function toggleSource(id) {
 
 function clearChat() {
     conversation.length = 0;
+    localStorage.removeItem('law_chat_history');
     document.getElementById('chatMessages').innerHTML = `
         <div class="chat-msg bot">
             <div class="chat-avatar">🤖</div>
